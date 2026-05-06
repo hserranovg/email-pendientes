@@ -311,7 +311,7 @@ let allEmails=[],curFilter='all';
 const SCOPES=['Mail.Read','User.Read','Calendars.Read'];
 
 function getMsalCfg(cid){
-  return{auth:{clientId:cid,authority:'https://login.microsoftonline.com/common',redirectUri:'https://hserranovg.github.io/email-pendientes'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:false}};
+  return{auth:{clientId:cid,authority:'https://login.microsoftonline.com/ab4e182d-6001-41aa-a5f9-daeeba34db3e',redirectUri:'https://hserranovg.github.io/email-pendientes'},cache:{cacheLocation:'localStorage',storeAuthStateInCookie:false}};
 }
 
 async function startLogin(){
