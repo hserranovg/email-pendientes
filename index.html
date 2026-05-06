@@ -323,7 +323,7 @@ async function startLogin(){
   if(!cid||cid.length<30){alert('Introduce un Client ID válido.');return;}
   localStorage.setItem('ep_cid',cid);
   await initMsal(cid);
-  try{const r=await msalApp.loginPopup({scopes:SCOPES});account=r.account;myEmail=account.username;await bootApp();}
+  try{const r=await msalApp.loginPopup({scopes:SCOPES});account=r.account;myEmail=account.username;await bootApp();startAutoRefresh();}
   catch(e){alert('Error: '+e.message);}
 }
 
@@ -445,7 +445,8 @@ async function loadAll(){
     setP(100,'');
     setTimeout(()=>{document.getElementById('prog-wrap').style.display='none';document.getElementById('prog-msg').style.display='none';},300);
     document.getElementById('loading').style.display='none';
-    document.getElementById('last-upd').textContent='Actualizado: '+new Date().toLocaleString('es-ES')+' · '+results.length+' hilos pendientes de respuesta';
+    const nextRefresh=new Date(Date.now()+5*60*1000);
+document.getElementById('last-upd').textContent='Actualizado: '+new Date().toLocaleString('es-ES')+' · '+results.length+' pendientes · próximo refresco: '+nextRefresh.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
     renderList();
   }catch(e){
     document.getElementById('loading').style.display='none';
@@ -567,6 +568,15 @@ function copyFlowJson(){
 function showToast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';
   setTimeout(()=>{t.style.display='none';},3500);
+}
+
+// AUTO-REFRESH cada 5 minutos
+let autoRefreshInterval=null;
+function startAutoRefresh(){
+  if(autoRefreshInterval) clearInterval(autoRefreshInterval);
+  autoRefreshInterval=setInterval(()=>{
+    if(document.getElementById('app').style.display!=='none') loadAll();
+  }, 5*60*1000);
 }
 
 // AUTO-RESTORE
