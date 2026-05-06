@@ -279,8 +279,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 
   <div class="stats">
     <div class="stat"><div class="slbl">En bandeja sin responder</div><div class="snum cn" id="sc-tot">—</div></div>
-    <div class="stat"><div class="slbl">Urgentes</div><div class="snum ca" id="sc-urg">—</div></div>
-    <div class="stat"><div class="slbl">+30 días</div><div class="snum cn" id="sc-old">—</div></div>
+    <div class="stat"><div class="slbl">Urgentes</div><div class="snum cn" id="sc-urg">—</div></div>
+    <div class="stat"><div class="slbl">+30 días</div><div class="snum ca" id="sc-old">—</div></div>
     <div class="stat"><div class="slbl">Esta semana</div><div class="snum cg" id="sc-wk">—</div></div>
   </div>
 
@@ -570,13 +570,36 @@ function showToast(msg){
   setTimeout(()=>{t.style.display='none';},3500);
 }
 
-// AUTO-REFRESH cada 5 minutos
+// AUTO-REFRESH cada 5 minutos — robusto
 let autoRefreshInterval=null;
+let lastRefreshTime=0;
+const REFRESH_MS=5*60*1000;
+
 function startAutoRefresh(){
   if(autoRefreshInterval) clearInterval(autoRefreshInterval);
+  lastRefreshTime=Date.now();
+  
+  // Usar visibilitychange para refrescar cuando vuelve la pestaña al foco
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+  document.addEventListener('visibilitychange', onVisibilityChange);
+  
+  // setInterval como fallback si la pestaña está activa
   autoRefreshInterval=setInterval(()=>{
-    if(document.getElementById('app').style.display!=='none') loadAll();
-  }, 5*60*1000);
+    if(document.visibilityState==='visible' && document.getElementById('app').style.display!=='none'){
+      lastRefreshTime=Date.now();
+      loadAll();
+    }
+  }, REFRESH_MS);
+}
+
+function onVisibilityChange(){
+  if(document.visibilityState==='visible' && document.getElementById('app').style.display!=='none'){
+    const elapsed=Date.now()-lastRefreshTime;
+    if(elapsed>=REFRESH_MS){
+      lastRefreshTime=Date.now();
+      loadAll();
+    }
+  }
 }
 
 // AUTO-RESTORE
