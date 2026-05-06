@@ -149,6 +149,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .tag{font-size:12px;padding:5px 11px;border-radius:20px;border:.5px solid var(--bd2);color:var(--tx2);cursor:pointer;background:var(--bg);user-select:none}
 .tag:hover{border-color:var(--bmid);color:var(--blu)}
 .tag.on{background:var(--bbg);color:var(--blu);border-color:transparent;font-weight:500}
+.tag.urgente-tag{color:var(--red);border-color:var(--rmid)}
+.tag.urgente-tag.on{background:var(--rbg);color:var(--red);border-color:transparent;font-weight:500}
 .ssel{font-size:12px;padding:5px 10px;border-radius:20px;border:.5px solid var(--bd2);color:var(--tx2);background:var(--bg);cursor:pointer;margin-left:auto}
 
 /* ── EMAIL CARDS ── */
@@ -171,6 +173,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ec-acts{display:flex;gap:7px;align-items:center}
 .lapp{font-size:12px;color:var(--pur);text-decoration:none;padding:3px 10px;border:.5px solid var(--bd2);border-radius:20px}
 .lapp:hover{background:var(--pbg);border-color:transparent}
+.lwin{font-size:12px;color:var(--blu);text-decoration:none;padding:3px 10px;border:.5px solid var(--bd2);border-radius:20px}
+.lwin:hover{background:var(--bbg);border-color:transparent}
 .lweb{font-size:12px;color:var(--blu);text-decoration:none;padding:3px 10px;border:.5px solid var(--bd2);border-radius:20px}
 .lweb:hover{background:var(--bbg);border-color:transparent}
 .empty-st{text-align:center;padding:3rem;color:var(--tx3);font-size:14px}
@@ -283,7 +287,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   <div class="frow">
     <span class="flbl2">Ver:</span>
     <span class="tag on" onclick="filt('all',this)">Todos</span>
-    <span class="tag" onclick="filt('urgente',this)">Urgentes</span>
+    <span class="tag urgente-tag" onclick="filt('urgente',this)">Urgentes</span>
     <span class="tag" onclick="filt('alta',this)">Alta prioridad</span>
     <span class="tag" onclick="filt('week',this)">Esta semana</span>
     <span class="tag" onclick="filt('month',this)">30 días</span>
@@ -516,7 +520,6 @@ function renderList(){
     const nr=e.neverReplied?'<span class="bdg" style="background:var(--rbg);color:var(--red);margin-left:4px">Nunca respondido</span>':'';
     const from=e.senderName?`${esc(e.senderName)} &lt;${esc(e.sender)}&gt;`:esc(e.sender);
     const att=e.hasAttachments?' · 📎':'';
-    const appLink=`ms-outlook://openMessage?mid=${encodeURIComponent(e.id)}`;
     return`<div class="ec ${pc}">
       <div class="ec-top"><div class="ec-subj">${esc(e.subject)}${att}</div><div class="ec-date">${ds} · ${dd}</div></div>
       <div class="ec-from">${from}</div>
@@ -524,7 +527,8 @@ function renderList(){
       <div class="ec-foot">
         <div style="display:flex;gap:4px;flex-wrap:wrap"><span class="bdg ${bc}">${bt}</span>${nr}</div>
         <div class="ec-acts">
-          <a href="${appLink}" class="lapp">Outlook app</a>
+          <a href="ms-outlook://openMessage?mid=${encodeURIComponent(e.id)}" class="lapp">Mac</a>
+          <a href="outlook:${encodeURIComponent(e.id)}" class="lwin">Win</a>
           <a href="${esc(e.webLink)}" class="lweb" target="_blank">Web ↗</a>
         </div>
       </div>
