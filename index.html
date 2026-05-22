@@ -237,23 +237,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="bsm" onclick="logout()">Salir</button>
     </div>
   </div>
-<div class="pa-step"><strong>2.</strong> Clic en <strong>+ Crear</strong> → <strong>Flujo de nube programado</strong>.</div>
-      <div class="pa-step"><strong>3.</strong> Nombre: <code>ResumenCorreosPendientes</code> · Frecuencia: <strong>Día</strong> · Hora: <code>05:00</code> · Zona horaria: <code>Europe/Madrid</code>. Clic en Crear.</div>
-      <div class="pa-step"><strong>4.</strong> Añade acción: <strong>Office 365 Outlook → Obtener mensajes de una carpeta de correo</strong>.<br>
-        Carpeta: <code>Inbox</code> · Mostrar solo sin leer: <code>No</code> · Elementos principales: <code>500</code>.</div>
-      <div class="pa-step"><strong>5.</strong> Añade acción: <strong>Office 365 Outlook → Obtener elementos de correo enviados</strong>.<br>
-        Elementos principales: <code>500</code>.</div>
-      <div class="pa-step"><strong>6.</strong> Añade acción: <strong>Inicializar variable</strong> → nombre: <code>pendientes</code> · tipo: <code>Matriz</code>.</div>
-      <div class="pa-step"><strong>7.</strong> Añade <strong>Aplicar a cada uno</strong> sobre los mensajes de inbox. Dentro, añade condición:<br>
-        <code>conversationId</code> del mensaje <strong>no está incluido en</strong> la lista de conversationIds de enviados.<br>
-        Si es verdad → <strong>Anexar a variable de matriz</strong> con asunto, remitente, fecha.</div>
-      <div class="pa-step"><strong>8.</strong> Añade acción: <strong>Microsoft Teams → Publicar mensaje en chat o canal</strong>.<br>
-        Destinatario: <code>Yo mismo (chat)</code>.<br>
-        Mensaje: usa <strong>Expresión</strong> para componer el resumen con <code>length(variables('pendientes'))</code> y el detalle de urgentes.</div>
-      <div class="pa-step"><strong>9.</strong> Guarda y activa el flujo. Luego duplícalo 3 veces cambiando la hora a <code>07:00</code>, <code>11:00</code> y <code>15:00</code>.</div>
-    </div>
-    <p class="pa-footer">O bien: usa el <strong>script de Power Automate HTTP</strong> que genera esta app — pulsa el botón de abajo para copiar el JSON del flujo listo para importar.</p>
-  </div>
 
   <div id="err-msg"></div>
   <div class="prog-wrap" id="prog-wrap"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
@@ -769,23 +752,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
       <button class="bsm" onclick="logout()">Salir</button>
     </div>
   </div>
-<div class="pa-step"><strong>2.</strong> Clic en <strong>+ Crear</strong> → <strong>Flujo de nube programado</strong>.</div>
-      <div class="pa-step"><strong>3.</strong> Nombre: <code>ResumenCorreosPendientes</code> · Frecuencia: <strong>Día</strong> · Hora: <code>05:00</code> · Zona horaria: <code>Europe/Madrid</code>. Clic en Crear.</div>
-      <div class="pa-step"><strong>4.</strong> Añade acción: <strong>Office 365 Outlook → Obtener mensajes de una carpeta de correo</strong>.<br>
-        Carpeta: <code>Inbox</code> · Mostrar solo sin leer: <code>No</code> · Elementos principales: <code>500</code>.</div>
-      <div class="pa-step"><strong>5.</strong> Añade acción: <strong>Office 365 Outlook → Obtener elementos de correo enviados</strong>.<br>
-        Elementos principales: <code>500</code>.</div>
-      <div class="pa-step"><strong>6.</strong> Añade acción: <strong>Inicializar variable</strong> → nombre: <code>pendientes</code> · tipo: <code>Matriz</code>.</div>
-      <div class="pa-step"><strong>7.</strong> Añade <strong>Aplicar a cada uno</strong> sobre los mensajes de inbox. Dentro, añade condición:<br>
-        <code>conversationId</code> del mensaje <strong>no está incluido en</strong> la lista de conversationIds de enviados.<br>
-        Si es verdad → <strong>Anexar a variable de matriz</strong> con asunto, remitente, fecha.</div>
-      <div class="pa-step"><strong>8.</strong> Añade acción: <strong>Microsoft Teams → Publicar mensaje en chat o canal</strong>.<br>
-        Destinatario: <code>Yo mismo (chat)</code>.<br>
-        Mensaje: usa <strong>Expresión</strong> para componer el resumen con <code>length(variables('pendientes'))</code> y el detalle de urgentes.</div>
-      <div class="pa-step"><strong>9.</strong> Guarda y activa el flujo. Luego duplícalo 3 veces cambiando la hora a <code>07:00</code>, <code>11:00</code> y <code>15:00</code>.</div>
+</div>
     </div>
-    <p class="pa-footer">O bien: usa el <strong>script de Power Automate HTTP</strong> que genera esta app — pulsa el botón de abajo para copiar el JSON del flujo listo para importar.</p>
-  </div>
 
   <div id="err-msg"></div>
   <div class="prog-wrap" id="prog-wrap"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
