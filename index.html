@@ -340,7 +340,7 @@ async function loadAll(){
     setP(10,'Descargando bandeja de entrada...');
     const inbox=await fetchAllPages(tok,
       `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages`+
-      `?$select=id,subject,sender,from,receivedDateTime,bodyPreview,webLink,conversationId,importance,hasAttachments`+
+      `?$select=id,subject,sender,from,receivedDateTime,bodyPreview,webLink,conversationId,importance,hasAttachments,internetMessageId`+
       `&$top=999&$orderby=receivedDateTime asc`,
       (n)=>setP(10+n*0.45,'Descargando bandeja... ('+Math.round(n*10)+' lotes)')
     );
@@ -866,7 +866,7 @@ async function loadAll(){
     setP(10,'Descargando bandeja de entrada...');
     const inbox=await fetchAllPages(tok,
       `https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages`+
-      `?$select=id,subject,sender,from,receivedDateTime,bodyPreview,webLink,conversationId,importance,hasAttachments`+
+      `?$select=id,subject,sender,from,receivedDateTime,bodyPreview,webLink,conversationId,importance,hasAttachments,internetMessageId`+
       `&$top=999&$orderby=receivedDateTime asc`,
       (n)=>setP(10+n*0.45,'Descargando bandeja... ('+Math.round(n*10)+' lotes)')
     );
@@ -1049,7 +1049,7 @@ function renderList(){
         <div style="display:flex;gap:4px;flex-wrap:wrap"><span class="bdg ${bc}">${bt}</span>${nr}${e.esperandoRespuesta?'<span class="bdg" style="background:#E8F4E8;color:#2D6A2D;margin-left:2px">⏳ Esperando respuesta</span>':''}</div>
         <div class="ec-acts">
           <button class="btn-hide" onclick="hideEmail('${e.id}')">Ocultar</button>
-          <a href="#" class="lapp" onclick="openMac(event,'${esc(e.webLink)}')">Mac</a>
+          <a href="#" class="lapp" onclick="openMac(event,'${e.id}','${esc(e.internetMessageId||'')}')">Mac</a>
           <a href="outlook:${encodeURIComponent(e.id)}" class="lwin">Win</a>
           <a href="${esc(e.webLink)}" class="lweb" target="_blank">Web ↗</a>
         </div>
@@ -1058,7 +1058,52 @@ function renderList(){
   }).join('');
 }
 
-function openMac(ev, webUrl) {
+// Cache de IDs convertidos para no llamar la API cada vez
+const ewsIdCache = new Map();
+
+async function openMac(ev, restId, internetMessageId) {
+  ev.preventDefault();
+  
+  // 1. Si tenemos internetMessageId, usar formato mailto que Outlook nuevo entiende
+  if (internetMessageId) {
+    // Outlook 16.x for Mac soporta este formato directamente
+    const url = `ms-outlook:///open?messageid=${encodeURIComponent(internetMessageId)}`;
+    window.location.href = url;
+    return;
+  }
+  
+  // 2. Convertir REST ID a EWS ID usando Graph translateExchangeIds
+  let ewsId = ewsIdCache.get(restId);
+  if (!ewsId) {
+    try {
+      const tok = await getToken();
+      const r = await fetch('https://graph.microsoft.com/v1.0/me/translateExchangeIds', {
+        method: 'POST',
+        headers: {'Authorization':'Bearer '+tok, 'Content-Type':'application/json'},
+        body: JSON.stringify({
+          inputIds: [restId],
+          targetIdType: 'entryId',
+          sourceIdType: 'restId'
+        })
+      });
+      const data = await r.json();
+      if (data.value && data.value[0] && data.value[0].targetId) {
+        ewsId = data.value[0].targetId;
+        ewsIdCache.set(restId, ewsId);
+      }
+    } catch(e) { console.warn('Translate ID failed:', e); }
+  }
+  
+  if (ewsId) {
+    // Outlook clásico Mac y nuevo Outlook usan este formato con EntryID
+    window.location.href = `ms-outlook://openMessage?entryid=${encodeURIComponent(ewsId)}`;
+  } else {
+    // Fallback: abrir Outlook app sin destino
+    window.location.href = 'ms-outlook://';
+  }
+}
+
+function openMacOLD(ev, webUrl) {
   ev.preventDefault();
   // Extract message ID from OWA URL for direct open
   const m = webUrl.match(/ItemID=([^&]+)/);
