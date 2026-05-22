@@ -128,7 +128,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .bsm{font-size:12.5px;background:none;border:.5px solid var(--bd2);border-radius:20px;padding:5px 13px;cursor:pointer;color:var(--tx2)}
 .bsm:hover{color:var(--tx)}.bsm:disabled{opacity:.4;cursor:not-allowed}
 .bref{color:var(--blu);border-color:var(--bbg);background:var(--bbg)}.bref:hover{opacity:.8}
-.bpa{color:var(--pur);border-color:var(--pbg);background:var(--pbg)}.bpa:hover{opacity:.8}
+
 
 /* ── PROGRESS ── */
 .prog-wrap{height:3px;background:var(--bd);border-radius:2px;margin-bottom:.5rem;overflow:hidden;display:none}
@@ -185,16 +185,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .spin{display:inline-block;width:18px;height:18px;border:2px solid var(--bd2);border-top-color:var(--bmid);border-radius:50%;animation:spin .7s linear infinite;margin-bottom:.75rem}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* ── POWER AUTOMATE PANEL ── */
-.pa-panel{background:var(--pbg);border:.5px solid var(--pmid);border-radius:var(--r);padding:1.25rem 1.5rem;margin-bottom:1.25rem}
-.pa-panel h2{font-size:15px;font-weight:600;color:var(--pur);margin-bottom:.5rem;display:flex;align-items:center;gap:8px}
-.pa-panel p{font-size:13px;color:var(--tx2);margin-bottom:.75rem;line-height:1.6}
-.pa-steps{display:flex;flex-direction:column;gap:.4rem}
-.pa-step{font-size:12.5px;color:var(--tx2);padding:.5rem .75rem;background:var(--bg);border-radius:var(--rs);border:.5px solid var(--bd)}
-.pa-step code{font-family:monospace;background:var(--bg3);padding:1px 5px;border-radius:3px;font-size:12px;color:var(--pur)}
-.pa-step strong{color:var(--tx)}
-.pa-footer{margin-top:.75rem;font-size:12px;color:var(--tx3)}
-.pa-footer a{color:var(--blu)}
+
 
 /* ── TOAST ── */
 .toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);background:var(--bg3);border:.5px solid var(--bd2);border-radius:20px;padding:9px 20px;font-size:13px;color:var(--tx);display:none;z-index:999;white-space:nowrap}
@@ -243,38 +234,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <div class="abar-r">
       <span class="pill" id="user-lbl">—</span>
       <button class="bsm bref" id="btn-ref" onclick="loadAll()">Actualizar</button>
-      <button class="bsm bpa" onclick="showPAPanel()">Configurar Teams automático</button>
+      
       <button class="bsm" onclick="logout()">Salir</button>
     </div>
   </div>
 
-  <!-- POWER AUTOMATE PANEL -->
-  <div class="pa-panel" id="pa-panel" style="display:none">
-    <h2>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect width="8" height="8" rx="1.5" fill="var(--pmid)"/><rect x="10" width="8" height="8" rx="1.5" fill="var(--pmid)" opacity=".6"/><rect y="10" width="8" height="8" rx="1.5" fill="var(--pmid)" opacity=".6"/><rect x="10" y="10" width="8" height="8" rx="1.5" fill="var(--pmid)"/></svg>
-      Envíos automáticos a Teams — Power Automate
-    </h2>
-    <p>Power Automate corre en los servidores de Microsoft. Los mensajes de Teams se enviarán a las <strong>05:00, 07:00, 11:00 y 15:00</strong> aunque tengas el ordenador apagado.</p>
-    <div class="pa-steps">
-      <div class="pa-step"><strong>1.</strong> Ve a <a href="https://make.powerautomate.com" target="_blank" style="color:var(--blu)">make.powerautomate.com</a> e inicia sesión con tu cuenta corporativa.</div>
-      <div class="pa-step"><strong>2.</strong> Clic en <strong>+ Crear</strong> → <strong>Flujo de nube programado</strong>.</div>
-      <div class="pa-step"><strong>3.</strong> Nombre: <code>ResumenCorreosPendientes</code> · Frecuencia: <strong>Día</strong> · Hora: <code>05:00</code> · Zona horaria: <code>Europe/Madrid</code>. Clic en Crear.</div>
-      <div class="pa-step"><strong>4.</strong> Añade acción: <strong>Office 365 Outlook → Obtener mensajes de una carpeta de correo</strong>.<br>
-        Carpeta: <code>Inbox</code> · Mostrar solo sin leer: <code>No</code> · Elementos principales: <code>500</code>.</div>
-      <div class="pa-step"><strong>5.</strong> Añade acción: <strong>Office 365 Outlook → Obtener elementos de correo enviados</strong>.<br>
-        Elementos principales: <code>500</code>.</div>
-      <div class="pa-step"><strong>6.</strong> Añade acción: <strong>Inicializar variable</strong> → nombre: <code>pendientes</code> · tipo: <code>Matriz</code>.</div>
-      <div class="pa-step"><strong>7.</strong> Añade <strong>Aplicar a cada uno</strong> sobre los mensajes de inbox. Dentro, añade condición:<br>
-        <code>conversationId</code> del mensaje <strong>no está incluido en</strong> la lista de conversationIds de enviados.<br>
-        Si es verdad → <strong>Anexar a variable de matriz</strong> con asunto, remitente, fecha.</div>
-      <div class="pa-step"><strong>8.</strong> Añade acción: <strong>Microsoft Teams → Publicar mensaje en chat o canal</strong>.<br>
-        Destinatario: <code>Yo mismo (chat)</code>.<br>
-        Mensaje: usa <strong>Expresión</strong> para componer el resumen con <code>length(variables('pendientes'))</code> y el detalle de urgentes.</div>
-      <div class="pa-step"><strong>9.</strong> Guarda y activa el flujo. Luego duplícalo 3 veces cambiando la hora a <code>07:00</code>, <code>11:00</code> y <code>15:00</code>.</div>
-    </div>
-    <p class="pa-footer">O bien: usa el <strong>script de Power Automate HTTP</strong> que genera esta app — pulsa el botón de abajo para copiar el JSON del flujo listo para importar.</p>
-    <button class="bsm bpa" style="margin-top:.75rem" onclick="copyFlowJson()">Copiar JSON del flujo (importable)</button>
-  </div>
+  
 
   <div id="err-msg"></div>
   <div class="prog-wrap" id="prog-wrap"><div class="prog-fill" id="prog-fill" style="width:0%"></div></div>
@@ -296,6 +261,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <span class="tag" onclick="filt('month',this)">30 días</span>
     <span class="tag" onclick="filt('+30',this)">+30 días</span>
     <span class="tag" onclick="filt('+90',this)">+90 días</span>
+    <span class="tag" onclick="filt('esperando',this)">⏳ Esperando respuesta</span>
+    <label style="font-size:12px;color:var(--tx3);display:flex;align-items:center;gap:5px;cursor:pointer;margin-left:auto">
+      <input type="checkbox" id="group-toggle" onchange="renderList()" style="cursor:pointer"> Agrupar por remitente
+    </label>
     <select class="ssel" id="ssel" onchange="renderList()">
       <option value="date-asc">Más antiguos primero</option>
       <option value="date-desc">Más recientes primero</option>
@@ -525,6 +494,7 @@ function renderList(){
   else if(curFilter==='month') f=f.filter(e=>e.days<=30);
   else if(curFilter==='+30') f=f.filter(e=>e.days>30);
   else if(curFilter==='+90') f=f.filter(e=>e.days>90);
+  else if(curFilter==='esperando') f=f.filter(e=>e.esperandoRespuesta);
 
   const sort=document.getElementById('ssel').value;
   const po={urgente:0,alta:1,media:2,normal:3};
@@ -544,7 +514,25 @@ function renderList(){
   const list=document.getElementById('email-list');
   if(!f.length){list.innerHTML='<div class="empty-st">No hay correos en esta categoría.</div>';return;}
 
-  list.innerHTML=f.map(e=>{
+  const grouped=document.getElementById('group-toggle')?.checked;
+  if(grouped){
+    const groups=new Map();
+    f.forEach(e=>{
+      const key=e.senderName||e.sender;
+      if(!groups.has(key)) groups.set(key,{name:e.senderName,email:e.sender,emails:[]});
+      groups.get(key).emails.push(e);
+    });
+    const sortedGroups=[...groups.values()].sort((a,b)=>b.emails.length-a.emails.length);
+    list.innerHTML=sortedGroups.map(g=>{
+      const items=g.emails.map(e=>renderCard(e)).join('');
+      return `<details open style="background:var(--bg);border:.5px solid var(--bd);border-radius:var(--r);padding:10px 14px;margin-bottom:8px"><summary style="cursor:pointer;font-size:14px;font-weight:500;color:var(--tx);padding:4px 0"><span style="color:var(--blu)">${g.emails.length}</span> · ${esc(g.name||g.email)} <span style="color:var(--tx3);font-size:12px">&lt;${esc(g.email)}&gt;</span></summary><div style="margin-top:10px;display:flex;flex-direction:column;gap:6px">${items}</div></details>`;
+    }).join('');
+    return;
+  }
+  list.innerHTML=f.map(e=>renderCard(e)).join('');
+}
+
+function renderCard(e){
     const ds=e.received.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});
     const dd=e.days===0?'hoy':e.days===1?'ayer':`hace ${e.days}d`;
     const pc=e.priority==='urgente'?'eu':e.priority==='alta'?'eh':e.priority==='media'?'em':'el';
@@ -568,36 +556,10 @@ function renderList(){
         </div>
       </div>
     </div>`;
-  }).join('');
 }
 
 function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// ── POWER AUTOMATE PANEL ──
-function showPAPanel(){
-  const p=document.getElementById('pa-panel');
-  p.style.display=p.style.display==='none'?'block':'none';
-}
-
-function copyFlowJson(){
-  const json={
-    "$schema":"https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
-    "note":"Importa este JSON en Power Automate como flujo HTTP. Necesita conexiones a Office 365 Outlook, Microsoft Teams y User Profile.",
-    "triggers":{"Recurrence":{"type":"Recurrence","recurrence":{"frequency":"Day","interval":1,"schedule":{"hours":["5","7","11","15"],"minutes":["0"]},"timeZone":"Romance Standard Time"}}},
-    "description":"Envía resumen de correos pendientes a Teams a las 05:00, 07:00, 11:00 y 15:00. Lógica: correos en inbox donde el último mensaje del hilo no es del usuario.",
-    "steps":[
-      "1. Trigger: Recurrencia diaria a las 05, 07, 11, 15h (Europe/Madrid)",
-      "2. Acción: Office 365 Outlook - Obtener mensajes carpeta Inbox (top: 500)",
-      "3. Acción: Office 365 Outlook - Obtener elementos enviados (top: 500)",
-      "4. Acción: Inicializar variable 'sentConvIds' (tipo: Matriz) con los conversationId de enviados",
-      "5. Acción: Inicializar variable 'pendientes' (tipo: Matriz)",
-      "6. Acción: Aplicar a cada uno (inbox) → si conversationId NO está en sentConvIds O fecha inbox > fecha último enviado → anexar a pendientes",
-      "7. Acción: Componer mensaje HTML con totales y lista de urgentes",
-      "8. Acción: Microsoft Teams - Publicar mensaje en chat (destinatario: yo mismo)"
-    ]
-  };
-  navigator.clipboard.writeText(JSON.stringify(json,null,2)).then(()=>showToast('JSON copiado al portapapeles'));
-}
 
 function showToast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';
