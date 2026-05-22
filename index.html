@@ -101,7 +101,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);font-size:15px;line-height:1.5;min-height:100vh}
 
 /* ── LOGIN ── */
-#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem;position:relative;z-index:10;background:var(--bg)}
 .lcard{background:var(--bg2);border:.5px solid var(--bd2);border-radius:var(--r);padding:2rem 1.75rem;max-width:500px;width:100%}
 .llogo{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem}
 .llogo span{font-size:18px;font-weight:600}
@@ -224,7 +224,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 </div>
 
 <!-- APP -->
-<div id="app">
+<div id="app" style="display:none">
   <div class="abar">
     <div>
       <h1>Correos pendientes de respuesta</h1>
@@ -456,6 +456,13 @@ function calcPriority(days,subj,prev,imp){
 function filt(f,el){curFilter=f;document.querySelectorAll('.tag').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderList();}
 
 function renderList(){
+  if(!allEmails || allEmails.length===0){
+    document.getElementById('sc-tot').textContent='—';
+    document.getElementById('sc-urg').textContent='—';
+    document.getElementById('sc-old').textContent='—';
+    document.getElementById('sc-wk').textContent='—';
+    return;
+  }
   const visible=allEmails.filter(e=>!hiddenIds.has(e.id));
   const hiddenCount=allEmails.length-visible.length;
   let hiddenBar=document.getElementById('hidden-bar');
@@ -486,10 +493,12 @@ function renderList(){
   else if(sort==='subject') f.sort((a,b)=>a.subject.localeCompare(b.subject,'es'));
   else if(sort==='sender') f.sort((a,b)=>(a.senderName||a.sender).localeCompare(b.senderName||b.sender,'es'));
 
-  document.getElementById('sc-tot').textContent=visible.length;
-  document.getElementById('sc-urg').textContent=visible.filter(e=>e.priority==='urgente').length;
-  document.getElementById('sc-old').textContent=visible.filter(e=>e.days>30).length;
-  document.getElementById('sc-wk').textContent=visible.filter(e=>e.days<=7).length;
+  try{
+    document.getElementById('sc-tot').textContent=visible.length;
+    document.getElementById('sc-urg').textContent=visible.filter(e=>e.priority==='urgente').length;
+    document.getElementById('sc-old').textContent=visible.filter(e=>e.days>30).length;
+    document.getElementById('sc-wk').textContent=visible.filter(e=>e.days<=7).length;
+  }catch(e){console.warn('Stats update error:',e);}
 
   const list=document.getElementById('email-list');
   if(!f.length){list.innerHTML='<div class="empty-st">No hay correos en esta categoría.</div>';return;}
@@ -616,7 +625,7 @@ var st,ct,ut,lt,dt,ht,pt,gt,ft,mt=function(){function t(e,t,r){this.networkInter
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--tx);font-size:15px;line-height:1.5;min-height:100vh}
 
 /* ── LOGIN ── */
-#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem}
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:2rem;position:relative;z-index:10;background:var(--bg)}
 .lcard{background:var(--bg2);border:.5px solid var(--bd2);border-radius:var(--r);padding:2rem 1.75rem;max-width:500px;width:100%}
 .llogo{display:flex;align-items:center;gap:10px;margin-bottom:1.25rem}
 .llogo span{font-size:18px;font-weight:600}
@@ -973,6 +982,13 @@ function calcPriority(days,subj,prev,imp){
 function filt(f,el){curFilter=f;document.querySelectorAll('.tag').forEach(t=>t.classList.remove('on'));el.classList.add('on');renderList();}
 
 function renderList(){
+  if(!allEmails || allEmails.length===0){
+    document.getElementById('sc-tot').textContent='—';
+    document.getElementById('sc-urg').textContent='—';
+    document.getElementById('sc-old').textContent='—';
+    document.getElementById('sc-wk').textContent='—';
+    return;
+  }
   const visible=allEmails.filter(e=>!hiddenIds.has(e.id));
   const hiddenCount=allEmails.length-visible.length;
   let hiddenBar=document.getElementById('hidden-bar');
@@ -1003,10 +1019,12 @@ function renderList(){
   else if(sort==='subject') f.sort((a,b)=>a.subject.localeCompare(b.subject,'es'));
   else if(sort==='sender') f.sort((a,b)=>(a.senderName||a.sender).localeCompare(b.senderName||b.sender,'es'));
 
-  document.getElementById('sc-tot').textContent=visible.length;
-  document.getElementById('sc-urg').textContent=visible.filter(e=>e.priority==='urgente').length;
-  document.getElementById('sc-old').textContent=visible.filter(e=>e.days>30).length;
-  document.getElementById('sc-wk').textContent=visible.filter(e=>e.days<=7).length;
+  try{
+    document.getElementById('sc-tot').textContent=visible.length;
+    document.getElementById('sc-urg').textContent=visible.filter(e=>e.priority==='urgente').length;
+    document.getElementById('sc-old').textContent=visible.filter(e=>e.days>30).length;
+    document.getElementById('sc-wk').textContent=visible.filter(e=>e.days<=7).length;
+  }catch(e){console.warn('Stats update error:',e);}
 
   const list=document.getElementById('email-list');
   if(!f.length){list.innerHTML='<div class="empty-st">No hay correos en esta categoría.</div>';return;}
