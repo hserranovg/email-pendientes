@@ -356,7 +356,7 @@ async function loadAll(){
     setP(60,'Descargando enviados...');
     const sent=await fetchAllPages(tok,
       `https://graph.microsoft.com/v1.0/me/mailFolders/sentItems/messages`+
-      `?$select=id,conversationId,sentDateTime`+
+      `?$select=id,subject,toRecipients,sentDateTime,bodyPreview,webLink,conversationId,internetMessageId`+
       `&$top=999&$orderby=sentDateTime desc`,
       (n)=>setP(60+n*0.25,'Descargando enviados...')
     );
@@ -425,19 +425,10 @@ async function loadAll(){
 
     // ── Calcular EsperandoEnviados: tus enviados que esperan respuesta ──
     setP(94,'Analizando enviados que esperan respuesta...');
-    // Necesitamos los enviados completos con body preview
-    // Re-fetch con campos completos solo si es necesario, o usar sent básico
-    // Mejor: hacer nueva consulta con body preview
-    const sentDetailed = await fetchAllPages(tok,
-      `https://graph.microsoft.com/v1.0/me/mailFolders/sentItems/messages`+
-      `?$select=id,subject,toRecipients,sentDateTime,bodyPreview,webLink,conversationId,internetMessageId`+
-      `&$top=999&$orderby=sentDateTime desc`,
-      ()=>setP(96,'Analizando enviados...')
-    );
 
     // Agrupar enviados por conversationId, quedarse con el más reciente de cada hilo
     const sentLatestByConv = new Map();
-    sentDetailed.forEach(m => {
+    sent.forEach(m => {
       const cid = m.conversationId || m.id;
       const existing = sentLatestByConv.get(cid);
       if (!existing || new Date(m.sentDateTime) > new Date(existing.sentDateTime)) {
@@ -447,13 +438,42 @@ async function loadAll(){
 
     // Para cada enviado, comprobar:
     // 1. Espera respuesta (por contenido)
-    // 2. No hay respuesta posterior en inbox de ese hilo
-    const inboxLatestByConv = new Map();
-    inbox.forEach(m => {
+    // 2. No hay respuesta posterior — buscando en TODAS las carpetas y por asunto normalizado
+    setP(95, 'Buscando respuestas en todas las carpetas...');
+    
+    // Descargar TODOS los mensajes recibidos recientes (de todas las carpetas)
+    // Usando /me/messages que busca en todo el buzón
+    const allReceivedRecent = await fetchAllPages(tok,
+      `https://graph.microsoft.com/v1.0/me/messages`+
+      `?$select=id,subject,from,receivedDateTime,conversationId,parentFolderId`+
+      `&$filter=receivedDateTime ge ${new Date(Date.now()-90*86400000).toISOString()}`+
+      `&$top=999&$orderby=receivedDateTime desc`,
+      ()=>setP(96,'Cruzando respuestas...')
+    );
+    
+    // Filtrar solo mensajes recibidos (que el remitente NO sea yo mismo)
+    const myEmailLower = (myEmail||'').toLowerCase();
+    const receivedAll = allReceivedRecent.filter(m => {
+      const fromAddr = (m.from?.emailAddress?.address || '').toLowerCase();
+      return fromAddr && fromAddr !== myEmailLower;
+    });
+    
+    // Indexar recibidos por conversationId Y por asunto normalizado
+    const receivedByConv = new Map();
+    const receivedBySubject = new Map();
+    receivedAll.forEach(m => {
       const cid = m.conversationId || m.id;
-      const existing = inboxLatestByConv.get(cid);
-      if (!existing || new Date(m.receivedDateTime) > new Date(existing.receivedDateTime)) {
-        inboxLatestByConv.set(cid, m);
+      const date = new Date(m.receivedDateTime);
+      
+      // Por conversationId
+      if (!receivedByConv.has(cid) || date > receivedByConv.get(cid)) {
+        receivedByConv.set(cid, date);
+      }
+      
+      // Por asunto normalizado
+      const normSubj = normalizeSubject(m.subject);
+      if (normSubj && (!receivedBySubject.has(normSubj) || date > receivedBySubject.get(normSubj))) {
+        receivedBySubject.set(normSubj, date);
       }
     });
 
@@ -462,10 +482,18 @@ async function loadAll(){
       // Verificar si espera respuesta por contenido
       if (!esperaRespuesta(m.subject, m.bodyPreview)) return;
 
-      // Verificar si la otra persona no ha respondido después
       const sentDate = new Date(m.sentDateTime);
-      const lastInbox = inboxLatestByConv.get(cid);
-      if (lastInbox && new Date(lastInbox.receivedDateTime) > sentDate) return; // Ya respondieron
+      
+      // Cruce 1: Por conversationId — ya respondieron en el mismo hilo
+      const lastByConv = receivedByConv.get(cid);
+      if (lastByConv && lastByConv > sentDate) return;
+      
+      // Cruce 2: Por asunto normalizado — ya respondieron en otro hilo con mismo asunto
+      const normSubj = normalizeSubject(m.subject);
+      if (normSubj) {
+        const lastBySubj = receivedBySubject.get(normSubj);
+        if (lastBySubj && lastBySubj > sentDate) return;
+      }
 
       // Construir objeto
       const to = m.toRecipients && m.toRecipients[0]?.emailAddress;
@@ -521,6 +549,17 @@ async function fetchAllPages(tok,url,progressCb){
     pg++;
   }
   return items;
+}
+
+// Normaliza asunto para detectar hilos relacionados aunque tengan distinto conversationId
+function normalizeSubject(subj) {
+  if (!subj) return '';
+  return subj
+    .toLowerCase()
+    .replace(/^(re|rv|fwd|fw|r|tr|automatic reply)[\s:]+/gi, '')
+    .replace(/^(re|rv|fwd|fw|r|tr)[\s:]+/gi, '') // doble pasada por si hay RE: RE:
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 // Detecta si un correo enviado por el usuario espera respuesta basándose en su contenido
