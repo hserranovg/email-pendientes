@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Correos pendientes</title>
+<title>Gestión de bandeja de entrada</title>
 <script>/*! @azure/msal-browser v2.38.3 2023-10-27 */
 "use strict";!function(e,t){"object"==typeof exports&&"undefined"!=typeof module?t(exports):"function"==typeof define&&define.amd?define(["exports"],t):t((e="undefined"!=typeof globalThis?globalThis:e||self).msal={})}(this,(function(e){
 /*! *****************************************************************************
@@ -228,7 +228,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <div id="app">
   <div class="abar">
     <div>
-      <h1>Correos pendientes de respuesta</h1>
+      <h1>Gestión de bandeja de entrada</h1>
       <div class="abar-sub" id="last-upd">—</div>
     </div>
     <div class="abar-r">
@@ -470,6 +470,8 @@ async function loadAll(){
       // Construir objeto
       const to = m.toRecipients && m.toRecipients[0]?.emailAddress;
       const days = Math.floor((Date.now() - sentDate.getTime()) / 86400000);
+      // Solo mostrar enviados de los últimos 30 días
+      if (days > 30) return;
 
       esperando.push({
         id: m.id,
@@ -592,11 +594,19 @@ function renderList(){
   if(curFilter==='esperando'){
     const visibleEsp = esperandoEnviados.filter(e=>!hiddenIds.has(e.id));
     f = [...visibleEsp];
-    // Update stats for this view
+    // Update stats for this view + change labels
     try{
+      // Cambiar etiquetas para la vista de esperando
+      document.querySelector('.stat:nth-child(1) .slbl').textContent='Esperando respuesta';
+      document.querySelector('.stat:nth-child(2) .slbl').textContent='Caducan en <5 días';
+      document.querySelector('.stat:nth-child(3) .slbl').textContent='+14 días esperando';
+      document.querySelector('.stat:nth-child(4) .slbl').textContent='Esta semana';
+      
       document.getElementById('sc-tot').textContent = visibleEsp.length;
-      document.getElementById('sc-urg').textContent = visibleEsp.filter(e=>e.days>14).length;
-      document.getElementById('sc-old').textContent = visibleEsp.filter(e=>e.days>30).length;
+      // Caducan en menos de 5 días = aquellos donde quedan menos de 5 días para los 30 totales
+      // = días esperando > 25 (porque 30-5=25)
+      document.getElementById('sc-urg').textContent = visibleEsp.filter(e=>e.days>=25).length;
+      document.getElementById('sc-old').textContent = visibleEsp.filter(e=>e.days>14).length;
       document.getElementById('sc-wk').textContent = visibleEsp.filter(e=>e.days<=7).length;
     }catch(e){}
   } else if(curFilter==='urgente') f=f.filter(e=>e.priority==='urgente');
@@ -615,6 +625,12 @@ function renderList(){
   else if(sort==='sender') f.sort((a,b)=>(a.senderName||a.sender).localeCompare(b.senderName||b.sender,'es'));
 
   try{
+    // Restaurar etiquetas por defecto
+    document.querySelector('.stat:nth-child(1) .slbl').textContent='En bandeja sin responder';
+    document.querySelector('.stat:nth-child(2) .slbl').textContent='Urgentes';
+    document.querySelector('.stat:nth-child(3) .slbl').textContent='+30 días';
+    document.querySelector('.stat:nth-child(4) .slbl').textContent='Esta semana';
+    
     document.getElementById('sc-tot').textContent=visible.length;
     document.getElementById('sc-urg').textContent=visible.filter(e=>e.priority==='urgente').length;
     document.getElementById('sc-old').textContent=visible.filter(e=>e.days>30).length;
