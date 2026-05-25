@@ -261,7 +261,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
     <span class="tag" onclick="filt('month',this)">30 días</span>
     <span class="tag" onclick="filt('+30',this)">+30 días</span>
     <span class="tag" onclick="filt('+90',this)">+90 días</span>
-    <span class="tag" onclick="filt('esperando',this)">⏳ Esperando respuesta</span>
+    <span class="tag" onclick="filt('esperando',this)">📤 Esperando respuesta</span>
     <label style="font-size:12px;color:var(--tx3);display:flex;align-items:center;gap:5px;cursor:pointer;margin-left:auto">
       <input type="checkbox" id="group-toggle" onchange="renderList()" style="cursor:pointer"> Agrupar por remitente
     </label>
@@ -283,6 +283,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 <script>
 let msalApp=null,account=null,myEmail='';
 let allEmails=[],curFilter='all';
+let esperandoEnviados=[]; // Correos enviados donde espero respuesta
 let hiddenIds=new Set(JSON.parse(localStorage.getItem('ep_hidden')||'[]'));
 function saveHidden(){localStorage.setItem('ep_hidden',JSON.stringify([...hiddenIds]));}
 function hideEmail(id){hiddenIds.add(id);saveHidden();renderList();}
@@ -421,11 +422,79 @@ async function loadAll(){
     });
 
     allEmails=results;
+
+    // ── Calcular EsperandoEnviados: tus enviados que esperan respuesta ──
+    setP(94,'Analizando enviados que esperan respuesta...');
+    // Necesitamos los enviados completos con body preview
+    // Re-fetch con campos completos solo si es necesario, o usar sent básico
+    // Mejor: hacer nueva consulta con body preview
+    const sentDetailed = await fetchAllPages(tok,
+      `https://graph.microsoft.com/v1.0/me/mailFolders/sentItems/messages`+
+      `?$select=id,subject,toRecipients,sentDateTime,bodyPreview,webLink,conversationId,internetMessageId`+
+      `&$top=999&$orderby=sentDateTime desc`,
+      ()=>setP(96,'Analizando enviados...')
+    );
+
+    // Agrupar enviados por conversationId, quedarse con el más reciente de cada hilo
+    const sentLatestByConv = new Map();
+    sentDetailed.forEach(m => {
+      const cid = m.conversationId || m.id;
+      const existing = sentLatestByConv.get(cid);
+      if (!existing || new Date(m.sentDateTime) > new Date(existing.sentDateTime)) {
+        sentLatestByConv.set(cid, m);
+      }
+    });
+
+    // Para cada enviado, comprobar:
+    // 1. Espera respuesta (por contenido)
+    // 2. No hay respuesta posterior en inbox de ese hilo
+    const inboxLatestByConv = new Map();
+    inbox.forEach(m => {
+      const cid = m.conversationId || m.id;
+      const existing = inboxLatestByConv.get(cid);
+      if (!existing || new Date(m.receivedDateTime) > new Date(existing.receivedDateTime)) {
+        inboxLatestByConv.set(cid, m);
+      }
+    });
+
+    const esperando = [];
+    sentLatestByConv.forEach((m, cid) => {
+      // Verificar si espera respuesta por contenido
+      if (!esperaRespuesta(m.subject, m.bodyPreview)) return;
+
+      // Verificar si la otra persona no ha respondido después
+      const sentDate = new Date(m.sentDateTime);
+      const lastInbox = inboxLatestByConv.get(cid);
+      if (lastInbox && new Date(lastInbox.receivedDateTime) > sentDate) return; // Ya respondieron
+
+      // Construir objeto
+      const to = m.toRecipients && m.toRecipients[0]?.emailAddress;
+      const days = Math.floor((Date.now() - sentDate.getTime()) / 86400000);
+
+      esperando.push({
+        id: m.id,
+        convId: cid,
+        subject: m.subject || '(sin asunto)',
+        sender: (to?.address || '').toLowerCase(),
+        senderName: to?.name || '',
+        received: sentDate, // fecha en que tú enviaste
+        days,
+        priority: calcPriority(days, m.subject || '', m.bodyPreview || '', 'normal'),
+        preview: m.bodyPreview || '',
+        webLink: m.webLink || '',
+        hasAttachments: false,
+        neverReplied: false,
+        esperandoRespuesta: true,
+        internetMessageId: m.internetMessageId || ''
+      });
+    });
+    esperandoEnviados = esperando.sort((a,b) => b.days - a.days);
+
     setP(100,'');
     setTimeout(()=>{document.getElementById('prog-wrap').style.display='none';document.getElementById('prog-msg').style.display='none';},300);
     document.getElementById('loading').style.display='none';
     const nextRefresh=new Date(Date.now()+5*60*1000);
-    document.getElementById('last-upd').textContent='Actualizado: '+new Date().toLocaleString('es-ES')+' · '+results.length+' pendientes · próximo refresco: '+nextRefresh.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
+    document.getElementById('last-upd').textContent='Actualizado: '+new Date().toLocaleString('es-ES')+' · '+results.length+' pendientes · '+esperandoEnviados.length+' esperando respuesta · próximo refresco: '+nextRefresh.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'});
     renderList();
   }catch(e){
     document.getElementById('loading').style.display='none';
@@ -450,6 +519,37 @@ async function fetchAllPages(tok,url,progressCb){
     pg++;
   }
   return items;
+}
+
+// Detecta si un correo enviado por el usuario espera respuesta basándose en su contenido
+function esperaRespuesta(subject, preview) {
+  const text = ((subject||'') + ' ' + (preview||'')).toLowerCase();
+  // Señales fuertes de espera de respuesta
+  const patterns = [
+    /\?$/m, // termina con interrogación
+    /¿/, // pregunta directa
+    /quedo a la espera/i,
+    /espero (tu |vuestra |su )?(respuesta|confirmación|noticias|feedback|comentarios|opinión)/i,
+    /esperando (tu |vuestra |su )?(respuesta|confirmación|noticias)/i,
+    /confirma(s|d|me)? (cuando|si|que|por favor)/i,
+    /podr[íi]a(s|n)? (confirmar|enviar|indicar|decir|aclarar)/i,
+    /me podr[íi]a(s|n)? (confirmar|enviar|indicar|decir|aclarar|pasar|hacer)/i,
+    /necesito (saber|que|tu|vuestra|una|la)/i,
+    /me confirm(as|áis|a)/i,
+    /pendiente de (tu |vuestra |su )?(respuesta|confirmación)/i,
+    /agradezco (tu |vuestra |su )?(respuesta|confirmación|ayuda)/i,
+    /a la espera de (tu |vuestra |su )?(respuesta|confirmación)/i,
+    /quedo pendiente/i,
+    /me dices (algo|si|cuando|qué)/i,
+    /me indicas (si|cuando|qué|cómo)/i,
+    /pots? (confirmar|enviar|dir)/i, // catalán
+    /podeu (confirmar|enviar|dir)/i, // catalán
+    /quedo a l'espera/i, // catalán
+    /could you (confirm|send|let me know|tell)/i, // inglés
+    /please (confirm|let me know|reply|send)/i,
+    /awaiting your (response|reply|confirmation)/i
+  ];
+  return patterns.some(p => p.test(text));
 }
 
 function calcPriority(days,subj,prev,imp){
@@ -488,13 +588,23 @@ function renderList(){
     if(hiddenCount>0) hiddenBar.innerHTML=`<span>${hiddenCount} correo${hiddenCount>1?'s':''} oculto${hiddenCount>1?'s':''}</span><button onclick="restoreAll()" style="font-size:12px;color:var(--blu);background:none;border:none;cursor:pointer;padding:0">Mostrar todos</button>`;
   }
   let f=[...visible];
-  if(curFilter==='urgente') f=f.filter(e=>e.priority==='urgente');
+  // Cambiar fuente de datos si es vista de "esperando respuesta"
+  if(curFilter==='esperando'){
+    const visibleEsp = esperandoEnviados.filter(e=>!hiddenIds.has(e.id));
+    f = [...visibleEsp];
+    // Update stats for this view
+    try{
+      document.getElementById('sc-tot').textContent = visibleEsp.length;
+      document.getElementById('sc-urg').textContent = visibleEsp.filter(e=>e.days>14).length;
+      document.getElementById('sc-old').textContent = visibleEsp.filter(e=>e.days>30).length;
+      document.getElementById('sc-wk').textContent = visibleEsp.filter(e=>e.days<=7).length;
+    }catch(e){}
+  } else if(curFilter==='urgente') f=f.filter(e=>e.priority==='urgente');
   else if(curFilter==='alta') f=f.filter(e=>e.priority==='alta'||e.priority==='urgente');
   else if(curFilter==='week') f=f.filter(e=>e.days<=7);
   else if(curFilter==='month') f=f.filter(e=>e.days<=30);
   else if(curFilter==='+30') f=f.filter(e=>e.days>30);
   else if(curFilter==='+90') f=f.filter(e=>e.days>90);
-  else if(curFilter==='esperando') f=f.filter(e=>e.esperandoRespuesta);
 
   const sort=document.getElementById('ssel').value;
   const po={urgente:0,alta:1,media:2,normal:3};
